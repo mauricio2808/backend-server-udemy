@@ -1,3 +1,5 @@
+
+
 var express = require('express');
 var bcrypt = require('bcryptjs');
 var jwt = require('jsonwebtoken');
@@ -59,7 +61,7 @@ app.post( '/google', async(req, res) =>{
                 });
 
 
-    Usuario.findOne( {email: googleUser.email}, (err, usuarioDB) =>{
+    Usuario.findOne( {email: googleUser.email}, (err, usuario) =>{
 
         if (err) {
             return res.status(500).json({
@@ -69,9 +71,9 @@ app.post( '/google', async(req, res) =>{
             });
         }
         
-        if (usuarioDB) {
+        if (usuario) {
             
-            if (usuarioDB === false){
+            if (usuario === false){
 
                 return res.status(400).json({
                     ok: false,
@@ -80,13 +82,16 @@ app.post( '/google', async(req, res) =>{
 
             }else{
 
-                var token = jwt.sign({ usuario: usuarioDB }, SEED, { expiresIn: 14400 }); // 4 horas
+                usuario.password = ':)';
+
+                var token = jwt.sign({ usuario: usuario }, SEED, { expiresIn: 14400 }); // 4 horas
 
                 res.status(200).json({
                     ok: true,
-                    usuario: usuarioDB,
+                    usuario: usuario,
                     token: token,
-                    id: usuarioDB._id
+                    id: usuario._id,
+                    menu: obtenerMenu(usuario.role)
                 });
         
 
@@ -113,7 +118,8 @@ app.post( '/google', async(req, res) =>{
                     ok: true,
                     usuario: usuarioDB,
                     token: token,
-                    id: usuarioDB._id
+                    id: usuarioDB._id,
+                    menu: obtenerMenu(usuarioDB.role)
                 });
             })
 
@@ -175,13 +181,51 @@ app.post('/', (req, res) => {
             ok: true,
             usuario: usuarioDB,
             token: token,
-            id: usuarioDB._id
+            id: usuarioDB._id,
+            menu: obtenerMenu(usuarioDB.role)
+            
         });
 
     })
 
 
 });
+
+
+function obtenerMenu(ROLE){
+
+    var menu = [
+        {
+          titulo: 'Principal',
+          icono: 'mdi mdi-gauge',
+          submenu: [
+            { titulo: 'Dashboard', url: '/dashboard' },
+            { titulo : 'ProgressBar', url: '/progress' },
+            { titulo : 'Promesas', url: '/promesas' },
+            { titulo : 'Rxjs', url: '/rxjs' },
+            { titulo: 'Gráficas', url: '/graficas1' }
+          ]
+        }, 
+    
+        {
+          titulo: 'Mantenimientos', 
+          icono: 'mdi mdi-folder-lock-open',
+          submenu: [
+           // { titulo:  'Usuarios',  url: '/usuarios'},
+            { titulo:  'Hospitales', url: '/hospitales'}, 
+            { titulo:  'Medicos',  url: '/medicos'}
+          ]
+        }
+      ];
+
+      if (ROLE === 'ADMIN_ROLE'){
+
+        menu[1].submenu.unshift( { titulo:  'Usuarios',  url: '/usuarios'});
+      }
+    
+
+    return menu;
+}
 
 
 
